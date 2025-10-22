@@ -1,6 +1,6 @@
 # TEMPO: Time-series Engine for Modeling and Parameter Optimization
 
-This repository contains code to perform rental demand forecasting.
+This repository contains Python code to perform forecasting with Optuna hyperparameter tuning.
 
 ## Prerequisites
 
