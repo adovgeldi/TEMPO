@@ -25,8 +25,8 @@ brew install python@3.11
 
 1. Clone the repository
 ```bash
-git clone https://github.com/Inspire11Consulting/rental-demand-forecasting.git
-cd rental-demand-forecasting
+git clone https://github.com/Insight-AppDevelopment/TEMPO.git
+cd TEMPO
 ```
 
 2. Create a virtual environment
@@ -48,8 +48,8 @@ pip install -r requirements.txt
 
 1. Clone the repository
 ```bash
-git clone https://github.com/Inspire11Consulting/rental-demand-forecasting.git
-cd rental-demand-forecasting
+git clone https://github.com/Insight-AppDevelopment/TEMPO.git
+cd TEMPO
 ```
 
 2. Create a virtual environment
@@ -111,8 +111,6 @@ pip install --upgrade pip
 ```bash
 pip install prophet==1.1.5
 ```
-
-4. For TensorFlow issues, ensure you have the required system libraries installed.
 
 ## Development
 
