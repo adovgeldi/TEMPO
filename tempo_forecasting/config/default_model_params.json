@@ -1,0 +1,50 @@
+{
+    "moving_avg": {
+        "n_days": 90
+    },
+    "knn": {
+        "len_q": 60,
+        "forecast_chunk_size": 60,
+        "k": 3
+    },
+    "expsmooth":{
+        "seasonal": "add", 
+        "seasonal_periods": 365, 
+        "initialization_method": "estimated",
+        "trend": null,
+        "freq": "D"
+    },
+    "prophet":{
+        "yearly_seasonality": true,
+        "weekly_seasonality": true,
+        "daily_seasonality": false,
+        "automanual_changepoints": true
+    },
+    "xgboost":{
+        "objective": "reg:squarederror",
+        "max_depth": 6,
+        "learning_rate": 0.1,
+        "n_estimators": 400,
+        "enable_categorical": true,
+        "random_state": 42,
+        "callbacks": null,
+        "lags": [1, 7, 30],
+        "windows": [7, 30, 90, 365]
+    },
+    "lightgbm":{
+        "objective": "regression",
+        "n_estimators": 400,
+        "max_depth": 6,
+        "learning_rate": 0.05,
+        "random_state": 42,
+        "min_data_in_leaf": 20,
+        "max_bin": 255,
+        "feature_fraction": 0.8,
+        "bagging_fraction": 0.8,
+        "bagging_freq": 5,
+        "verbose": -1,
+        "callbacks": null,
+        "lags": [1, 7, 30],
+        "windows": [7, 30, 90, 365]
+    }
+}

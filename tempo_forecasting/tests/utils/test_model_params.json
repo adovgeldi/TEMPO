@@ -1,0 +1,31 @@
+
+{
+    "moving_avg": {
+        "n_days": 42
+    },
+    "knn": {
+        "len_q": 4,
+        "forecast_chunk_size": 2,
+        "k": 2
+    },
+    "expsmooth":{
+        "seasonal_periods": 42, 
+        "smoothing_level": 0.42
+    },
+    "prophet":{
+        "seasonality_prior_scale": 0.42,
+        "automanual_changepoints": true,
+        "uncertainty_samples": 42
+    },
+    "xgboost":{
+        "n_estimators": 42,
+        "lags": [2,4,42],
+        "windows": [2,4,42]
+    },
+    "lightgbm":{
+        "n_estimators": 42,
+        "callbacks": null,
+        "lags": [2,4,42],
+        "windows": [2,4,42]
+    }
+}

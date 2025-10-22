@@ -1,0 +1,26 @@
+{
+    "project_name": "Time Series AutoML",
+    "data": {
+      "train_path": "data/train.csv",
+      "test_path": "data/test.csv",
+      "output_path": "data/output/"
+    },
+    "model_defaults": {
+      "default_model": "prophet",
+      "train_test_split_ratio": 0.8,
+      "evaluation_metrics": ["wmape", "rmse", "mae"]
+    },
+    "optuna": {
+      "n_trials": 50,
+      "timeout_sec": 300,
+      "performance_plateau_threshold": 1e-5,
+      "plateau_trials_window": 10
+    },
+    "logging": {
+      "log_name": "global_logger",
+      "log_level": "",
+      "log_file": "tempo/logs/pipeline.log"
+    }
+  }
+
+  

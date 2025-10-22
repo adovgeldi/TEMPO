@@ -1,0 +1,116 @@
+{
+    "moving_avg": {
+        "build_params": [],
+        "fit_params": [],
+        "custom_params": [
+            "n_days"
+        ]
+    },
+    "knn": {
+        "build_params": [],
+        "fit_params": [],
+        "custom_params": [
+            "len_q",
+            "forecast_chunk_size",
+            "k"
+        ]
+    },
+    "expsmooth": {
+        "build_params": [
+            "seasonal",
+            "trend",
+            "seasonal_periods",
+            "initialization_method",
+            "freq",
+            "damped_trend"
+        ],
+        "fit_params": [
+            "smoothing_level",
+            "smoothing_trend",
+            "smoothing_seasonal",
+            "damping_trend",
+            "damping_slope",
+            "optimized",
+            "use_boxcox",
+            "remove_bias",
+            "method",
+            "maxiter"
+        ],
+        "custom_params": []
+    },
+    "prophet": {
+        "build_params": [
+            "growth",
+            "yearly_seasonality",
+            "weekly_seasonality",
+            "daily_seasonality",
+            "seasonality_mode",
+            "seasonality_prior_scale", 
+            "holidays",
+            "holidays_prior_scale",
+            "holidays_mode", 
+            "changepoints", 
+            "n_changepoints", 
+            "changepoint_range",
+            "changepoint_prior_scale",
+            "mcmc_samples",
+            "stan_backend"
+        ],
+        "fit_params": [
+            "uncertainty_samples"
+        ],
+        "custom_params": [
+            "automanual_changepoints"
+        ]
+    },
+    "xgboost": {
+        "build_params": [
+            "objective",
+            "max_depth",
+            "learning_rate",
+            "n_estimators",
+            "enable_categorical",
+            "random_state",
+            "callbacks",
+            "min_child_weight",
+            "tree_method",
+            "grow_policy",
+            "max_leaves",
+            "max_bin"
+        ],
+        "fit_params": [],
+        "custom_params": [
+            "windows",
+            "lags"
+        ]
+    },
+    "lightgbm": {
+        "build_params": [
+            "objective",
+            "n_estimators",
+            "max_depth",
+            "learning_rate",
+            "random_state",
+            "min_data_in_leaf",
+            "max_bin",
+            "feature_fraction",
+            "bagging_fraction",
+            "bagging_freq",
+            "verbose",
+            "num_leaves",
+            "lambda_l1",
+            "lambda_l2",
+            "force_col_wise",
+            "feature_fraction_bynode",
+            "max_bin",
+            "min_data_in_leaf"
+        ],
+        "fit_params": [
+            "callbacks"
+        ],
+        "custom_params": [
+            "windows",
+            "lags"
+        ]
+    }
+}

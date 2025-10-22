@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tempo"
+version = "0.1.0"
+description = "TEMPO: Time-series Engine for Modeling and Parameter Optimization"
+authors = [{name = "Inspire11"}]
+readme = "README.md"
+requires-python = "==3.11"
+license = { file = "LICENSE" }
+dependencies = [
+    "pandas==2.0.3",
+    "numpy==1.24.3",
+    "scikit-learn==1.3.0",
+    "xgboost==2.0.3",
+    "lightgbm==4.1.0",
+    "prophet==1.1.5",
+    "statsmodels==0.14.1",
+    "joblib==1.3.2",
+    "typing-extensions==4.6.0",
+    "python-dateutil==2.8.2",
+    "matplotlib==3.7.1",
+    "optuna==4.1.0",
+    "optuna-integration[xgboost]==4.1.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==7.4.3",
+    "ipykernel",
+    "black",
+    "flake8",
+    "pytest-mock"
+]
+
+[tool.setuptools]
+package-dir = { "" = "." }
+
+[tool.setuptools.packages.find]
+include = ["tempo*"]
+exclude = ["tempo.tests*"]
+
+[tool.setuptools.package-data]
+"tempo" = ["config/*.json", "tests/logs/*.json"]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  ".", 
+  "tempo"
+]
+testpaths = ["tempo/tests"]
