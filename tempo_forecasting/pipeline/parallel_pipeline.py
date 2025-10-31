@@ -116,8 +116,8 @@ class ParallelPipeline:
                 eval_output = evaluation_pipeline(category = category,
                                                   category_results = category_results,
                                                   args = self.args,
+                                                  forecast_horizon = self.args.get["future_forecast_horizon"],
                                                   target_metric = self.target_metric,
-                                                  forecast_horizon = 365,
                                                   logger = category_logger)
                 param_df, output_data_df, eval_logger = eval_output
 

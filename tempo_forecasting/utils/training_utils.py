@@ -2,8 +2,11 @@ import pandas as pd
 import numpy as np
 from typing import Dict, Any, Optional, Tuple, Sequence
 from dateutil.relativedelta import relativedelta
+from pandas.tseries.frequencies import to_offset
+
 
 from tempo_forecasting.utils.logging_utils import logger
+
 
 def calculate_metric(actual: np.array, 
                      predicted: np.array, 
@@ -66,6 +69,7 @@ def calculate_metric(actual: np.array,
         logger.error(f"Error while calculating metric '{metric}': {str(e)}")
         return np.nan
     
+
 def enforce_datetime_index(df: pd.DataFrame, date_col: str) -> pd.DataFrame:
     """
     Takes in a dataframe, checks whether the index is currently a date column, and if not
@@ -91,6 +95,7 @@ def enforce_datetime_index(df: pd.DataFrame, date_col: str) -> pd.DataFrame:
         except Exception as e:
             raise ValueError(f"Failed to convert index to DatetimeIndex: {e}")
     return df.sort_index()
+
 
 def calculate_time_periods(max_date_str: str,
                            n_test_months: int,
@@ -197,6 +202,7 @@ def calculate_time_periods(max_date_str: str,
 
     return date_ranges
 
+
 def select_train_and_test(modeling_data: pd.DataFrame, 
                           date_col: str, 
                           min_date_str: str, 
@@ -239,6 +245,7 @@ def select_train_and_test(modeling_data: pd.DataFrame,
                 (data.index <= max_date)]
     
     return train, test
+
 
 def train_and_validate(model,
                        model_param_dict: Dict[str,Any],
@@ -287,6 +294,7 @@ def train_and_validate(model,
     }
 
     return results
+
 
 def cross_validate(data: pd.DataFrame, 
                    date_col: str, 
@@ -352,3 +360,158 @@ def cross_validate(data: pd.DataFrame,
         results += [cv_results]
     
     return results
+
+
+def _validate_pandas_completeness(df: pd.DataFrame, 
+                                  date_col: str, 
+                                  freq: str, 
+                                  group_col: str = None
+                                  ) -> None:
+    """
+    Validate that the pandas DataFrame has no missing time steps for the specified frequency by checking for missing dates based on the specified frequency.
+
+    Parameters:
+        df (pd.DataFrame): DataFrame containing the time series data
+        date_col (str): Name of the date column in the DataFrame
+        freq (str): Frequency string (e.g., 'D' for daily, 'W' for weekly, 'W-SUN' for weekly starting on Sunday)
+        group_col (str, optional): If provided, check the completeness within each group
+
+    Raises:
+        ValueError: If any expected dates are missing.
+    """
+    freq = to_offset(freq).freqstr
+    data = df.copy()
+    data[date_col] = pd.to_datetime(data[date_col])
+
+    if group_col:
+        missing_all = []
+
+        for key, group in data.groupby(group_col):
+            group = group.sort_values(by=date_col)
+            expected = pd.date_range(start=group[date_col].min(), 
+                                     end=group[date_col].max(), 
+                                     freq=freq)
+            actual = pd.to_datetime(pd.Series(group[date_col].unique()))
+            missing = expected.difference(actual)
+
+            if not missing.empty:
+                missing_all.append((key, missing))
+            
+        if missing_all:
+            msg = "\n".join([f"Group '{key}': Missing dates: {list(missing)}" for key, missing in missing_all])
+            raise ValueError("Missing time steps in pandas DataFrame:\n{msg}")
+        else:
+            print("No missing time steps found in pandas DataFrame.")   
+        
+    else:
+        expected = pd.date_range(start=data[date_col].min(), 
+                                 end=data[date_col].max(), 
+                                 freq=freq)
+        actual = pd.DatetimeIndex(data[date_col].unique())
+        missing = expected.difference(actual)
+
+        if not missing.empty:
+            raise ValueError(f"Missing time steps in pandas DataFrame: {list(missing)}")    
+        else:
+            print("No missing time steps found in pandas DataFrame.")    
+
+
+def _validate_pyspark_completeness(df,
+                                   date_col: str,
+                                   freq: str,
+                                   group_col: str = None
+                                   ) -> None:
+    """
+    Validate that the pandas DataFrame has no missing time steps for the specified frequency by checking for missing dates based on the specified frequency.
+
+    Parameters:
+        df (pyspark.sql.DataFrame): PySpark DataFrame containing the time series data
+        date_col (str): Name of the date column in the DataFrame
+        freq (str): Frequency string. Currently supports 'D' (daily), 'W' (weekly), 'M' (monthly)
+        group_col (str, optional): If provided, check the completeness within each group
+
+    Raises:
+        ValueError: If any expected dates are missing.
+    """
+    freq = to_offset(freq).freqstr.upper()
+    supported_freqs = {'D': 'DAY', 'W': 'WEEK', 'M': 'MONTH'}
+
+    if freq.startswith("D"):
+        interval = "1 DAY"
+    elif freq.startswith("W"):
+        interval = "1 WEEK"
+    elif freq.startswith("M"):
+        interval = "1 MONTH"
+    else:
+        raise ValueError(f"Unsupported frequency '{freq}' for PySpark completeness check. Supported frequencies are: {list(supported_freqs.keys())}")
+    
+    if group_col:
+        df_min_max = df.groupBy(group_col).agg(
+            F.min(F.col(date_col)).alias("min_date"),
+            F.max(F.col(date_col)).alias("max_date")
+        )
+
+        df_expected = df_min_max.withColumn("expected_dates",
+                                            F.sequence(F.col("min_date"), F.col("max_date"), F.lit(interval))
+        ).select(group_col, F.explode(F.col("expected_dates")).alias("expected_date"))
+
+        df_actual = df.select(F.col(group_col), F.col(date_col).alias("actual_date")).dropDuplicates()
+
+        missing = (df.expected.join(df_actual,
+                                    (df_expected[group_col] == df_actual[group_col]) &
+                                    (df_expected.expected_date == df_actual.actual_date),
+                                    how = "left_anti"))
+        if missing.limit(1).count() > 0:
+            sample = missing.limit(10).toPandas()
+            raise ValueError(f"Missing time steps in PySpark DataFrame. Example:\n{sample}")
+        else:
+            print("No missing time steps found in PySpark DataFrame.")
+            
+    else: 
+        minmax = df.agg(
+            F.min(F.col(date_col)).alias("min_date"),
+            F.max(F.col(date_col)).alias("max_date")
+        ).collect()[0]
+
+        start, end = minmax['min_date'], minmax['max_date']
+        expected = df.SparkSession.createDataFrame(
+            pd.date_range(start=start, end=end, freq=freq).to_frame(index=False, name="expected_date")
+        )
+        actual = df.select(F.col(date_col).alias("actual_date")).dropDuplicates()
+
+        missing = expected.join(actual,
+                                expected.expected_date == actual.actual_date,
+                                how="left_anti")
+        
+        if missing.limit(1).count() > 0:
+            sample = missing.limit(10).toPandas()
+            raise ValueError(f"Missing time steps in PySpark DataFrame Example:\n{sample}")
+        else:
+            print("No missing time steps found in PySpark DataFrame.")
+
+
+def validate_time_series_completeness(
+        df, 
+        date_col: str, 
+        freq: str, 
+        group_col: str = None
+        ) -> None:
+    """
+    Validate that the time series data has no missing time steps for the specified frequency.
+    Supports both pandas and PySpark DataFrames.
+    
+    Parameters:
+        df (DataFrame; either pandas or pyspark): DataFrame containing the time series data
+        date_col (str): Name of the date column in the DataFrame
+        freq (str): Frequency string (e.g., 'D' for daily, 'W' for weekly)
+        group_col (str, optional): If provided, check the completeness within each group
+    
+    Raises:
+        ValueError: If any expected dates/timestamps are missing.
+    """
+    is_pandas = isinstance(df, pd.DataFrame)
+
+    if is_pandas:
+        _validate_pandas_completeness(df, date_col, freq, group_col)
+    else:
+        _validate_pyspark_completeness(df, date_col, freq, group_col)

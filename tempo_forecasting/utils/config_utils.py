@@ -1,5 +1,5 @@
 from tempo_forecasting.optuna_opt.optuna_param import SearchSpaceParam
-from tempo_forecasting.models import MovingAvgModel, KNNModel, ExpSmoothingModel, ProphetModel, XGBoostModel, LightGBMModel
+from tempo_forecasting.models import MovingAvgModel, KNNModel, ExpSmoothingModel, ProphetModel, XGBoostModel , LightGBMModel
 from typing import Dict, Any, Optional, Tuple, Sequence
 
 
@@ -59,17 +59,21 @@ def get_default_search_params(model_name: str) -> Sequence[SearchSpaceParam]:
     """
     if model_name == "moving_avg":
         return [
-            SearchSpaceParam("n_days", "int", "categorical", choices=[30,60,90,120,365]),
+            # SearchSpaceParam("n_steps", "int", "categorical", choices=[30,60,90,120,365]),
+            SearchSpaceParam("n_steps", "int", "categorical", choices=[1,4,8,12]),
         ]
     if model_name == "knn":
         return [
-            SearchSpaceParam("len_q", "int", "categorical", choices=[90,120,180]),
-            SearchSpaceParam("forecast_chunk_size", "int", "categorical", choices=[60,90,120]),
+            # SearchSpaceParam("len_q", "int", "categorical", choices=[90,120,180]),
+            # SearchSpaceParam("forecast_chunk_size", "int", "categorical", choices=[60,90,120]),
+            SearchSpaceParam("len_q", "int", "categorical", choices=[4,12,26]),
+            SearchSpaceParam("forecast_chunk_size", "int", "categorical", choices=[4,8,12,26]),
             SearchSpaceParam("k", "int", "categorical", choices=[2,3]),
         ]
     elif model_name =="expsmooth":
         return [
-            SearchSpaceParam("seasonal_periods", "int", "categorical", choices=[184,365]), # annual or biannual seasonality
+            # SearchSpaceParam("seasonal_periods", "int", "categorical", choices=[184,365]), # annual or biannual seasonality
+            SearchSpaceParam("seasonal_periods", "int", "categorical", choices=[26,52]), # annual or biannual seasonality
             SearchSpaceParam("smoothing_level", "float", "bounded", bounds=[0.1, 1.0], step_size=0.1), # smoothing factor for data
            # SearchSpaceParam("smoothing_trend", "float", "bounded", bounds=[0.01, 0.31], step_size=0.05), # smoothing factor for trend
             SearchSpaceParam("smoothing_seasonal", "float", "bounded", bounds=[0.01, 0.51], step_size=0.05), # smoothing factor for seasonality
@@ -91,8 +95,10 @@ def get_default_search_params(model_name: str) -> Sequence[SearchSpaceParam]:
             SearchSpaceParam("learning_rate", "float", "bounded", bounds=[0.01, 0.3], logscale=True), # controls how much each new decision tree contributes to final; smaller = more stable predictions
             SearchSpaceParam("n_estimators", "int", "bounded", bounds=[100,800], step_size=100), # higher values should help with more complex seasonality patterns
             SearchSpaceParam("min_child_weight", "int", "bounded", bounds=[1,7]), # higher values can help combat overfitting
-            SearchSpaceParam("windows", "str", "categorical", choices = ["[7, 30, 92, 184, 365]","[7, 30, 60, 90]"]),
-            SearchSpaceParam("lags", "str", "categorical", choices = ["[184, 365]","[]"])
+            # SearchSpaceParam("windows", "str", "categorical", choices = ["[7, 30, 92, 184, 365]","[7, 30, 60, 90]"]),
+            # SearchSpaceParam("lags", "str", "categorical", choices = ["[184, 365]","[]"])
+            SearchSpaceParam("windows", "str", "categorical", choices = ["[1, 4, 12, 26]","[1, 4, 8, 12]"]),
+            SearchSpaceParam("lags", "str", "categorical", choices = ["[26, 52]","[]"])
         ] 
     elif model_name == "lightgbm":
         return [
@@ -101,8 +107,10 @@ def get_default_search_params(model_name: str) -> Sequence[SearchSpaceParam]:
             SearchSpaceParam("n_estimators", "int", "bounded", bounds=[100,800], step_size=100), # higher values should help with more complex seasonality patterns
             SearchSpaceParam("min_data_in_leaf", "int", "bounded", bounds=[40, 140], step_size=20), # may help: higher values for more expensive machines with sparse rentals
             SearchSpaceParam("lambda_l2", "float", "bounded", bounds=[1e-2, 10.0], logscale=True), # L2 regularization
-            SearchSpaceParam("windows", "str", "categorical", choices = ["[7, 30, 92, 184, 365]","[7, 30, 60, 90]"]),
-            SearchSpaceParam("lags", "str", "categorical", choices = ["[184, 365]","[]"])
+            # SearchSpaceParam("windows", "str", "categorical", choices = ["[7, 30, 92, 184, 365]","[7, 30, 60, 90]"]),
+            # SearchSpaceParam("lags", "str", "categorical", choices = ["[184, 365]","[]"])
+            SearchSpaceParam("windows", "str", "categorical", choices = ["[1, 4, 12, 26]","[1, 4, 8, 12]"]),
+            SearchSpaceParam("lags", "str", "categorical", choices = ["[26, 52]","[]"])
         ]
     else:
         raise KeyError(f'Invalid model name: {model_name} provided.')
@@ -127,7 +135,7 @@ def get_test_search_params(model_name: str) -> Sequence[SearchSpaceParam]:
     """
     if model_name == "moving_avg":
         return [
-            SearchSpaceParam("n_days", "int", "categorical", choices=[1]),
+            SearchSpaceParam("n_steps", "int", "categorical", choices=[1]),
         ]
     elif model_name =="expsmooth":
         return [
