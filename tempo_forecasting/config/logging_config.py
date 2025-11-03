@@ -1,8 +1,8 @@
 # Centralized logging configuration
 
 # Unity Catalog settings
-SCHEMA_NAME = "logs"
-LOG_TABLE_NAME = "ml_training_logs"
+SCHEMA_NAME = "default"
+LOG_TABLE_NAME = "pipeline_logs"
 
 # Logging parameters
 LOG_RETENTION_DAYS = 30

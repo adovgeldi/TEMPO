@@ -4,12 +4,13 @@ from tempo_forecasting.utils.training_utils import calculate_metric, select_trai
 from tempo_forecasting.utils.config_utils import get_models
 from typing import Dict, Any, Optional, Tuple
 
+
 def evaluation_pipeline(
         category: str, 
         category_results: Dict[str, Any],
         args,
+        forecast_horizon: int,
         target_metric: str ="WMAPE",
-        forecast_horizon: int = 365,
         logger = None
         ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, Optional[Any]]:
     """
@@ -18,6 +19,8 @@ def evaluation_pipeline(
     Parameters:
         category (str): The category name (e.g., machine type).
         category_results (dict): Dictionary of trained models and their metrics.
+        args (dict): A dictionary containing training arguments, including date and target variable columns.
+        forecast_horizon (int): The number of steps to forecast into the future.
         target_metric (str): The metric to determine the best model (default is WMAPE).
         logger (WorkerLogger, optional): Logger instance for recording progress.
 
@@ -106,20 +109,18 @@ def evaluation_pipeline(
         raise
 
     final_train_preds = model.fitted_vals # Predict on full dataset
-    final_train_preds = np.maximum(np.ceil(final_train_preds - 0.3).astype(int), 0)
     final_train_metric = calculate_metric(final_train_data[args["target_y"]], final_train_preds, metric=target_metric)  
 
     # Generate future dates for prediction
     # Create placeholder DataFrame for future forecast
     log_func_info(f"Last date in training data: {final_max_date}")
-    future_dates = pd.date_range(start=pd.Timestamp(final_max_date) + pd.Timedelta(days=1), periods=forecast_horizon, freq="D")
+    future_dates = pd.date_range(start=pd.Timestamp(final_max_date) + pd.Timedelta(days=1), periods=forecast_horizon, freq=args["freq"])
     future_df = pd.DataFrame(index=future_dates)
     future_df[args["target_y"]] = None  # Placeholder for predictions
 
-    log_func_info(f"Predicting {forecast_horizon} days ahead")
+    log_func_info(f"Predicting {forecast_horizon} steps ahead")
     try:
         future_predictions = model.predict(future_df)
-        future_predictions = np.maximum(np.ceil(future_predictions - 0.3).astype(int), 0)
         log_func_info(f"Successfully generated {len(future_predictions)} future predictions")
     except Exception as e:
         log_func_info(f"Error generating future predictions: {str(e)}", details=str(e))
@@ -176,7 +177,7 @@ def evaluation_pipeline(
     log_func_info(f"Evaluation complete for {category}")
     
     # Log some summary statistics
-    log_func_info(f"Summary: {best_model_name} model with train {target_metric}={final_train_metric:.4f}, forecast horizon={forecast_horizon} days")
+    log_func_info(f"Summary: {best_model_name} model with train {target_metric}={final_train_metric:.4f}, forecast horizon={forecast_horizon} steps")
 
     # return future_forecast_df, final_param_df, final_pred_df, final_fitted_df, final_vals, logger
     return final_param_df, final_vals, logger
