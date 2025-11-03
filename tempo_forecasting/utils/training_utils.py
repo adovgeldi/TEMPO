@@ -1,5 +1,8 @@
 import pandas as pd
 import numpy as np
+import pyspark.sql.functions as F
+from pyspark.sql.types import DateType
+
 from typing import Dict, Any, Optional, Tuple, Sequence
 from dateutil.relativedelta import relativedelta
 from pandas.tseries.frequencies import to_offset
@@ -445,6 +448,8 @@ def _validate_pyspark_completeness(df,
     else:
         raise ValueError(f"Unsupported frequency '{freq}' for PySpark completeness check. Supported frequencies are: {list(supported_freqs.keys())}")
     
+    df = df.withColumn(date_col, F.col(date_col).cast(DateType()))
+
     if group_col:
         df_min_max = df.groupBy(group_col).agg(
             F.min(F.col(date_col)).alias("min_date"),
@@ -452,12 +457,12 @@ def _validate_pyspark_completeness(df,
         )
 
         df_expected = df_min_max.withColumn("expected_dates",
-                                            F.sequence(F.col("min_date"), F.col("max_date"), F.lit(interval))
+                                            F.sequence(F.col("min_date"), F.col("max_date"), F.expr(f"INTERVAL {interval}"))
         ).select(group_col, F.explode(F.col("expected_dates")).alias("expected_date"))
 
         df_actual = df.select(F.col(group_col), F.col(date_col).alias("actual_date")).dropDuplicates()
 
-        missing = (df.expected.join(df_actual,
+        missing = (df_expected.join(df_actual,
                                     (df_expected[group_col] == df_actual[group_col]) &
                                     (df_expected.expected_date == df_actual.actual_date),
                                     how = "left_anti"))
