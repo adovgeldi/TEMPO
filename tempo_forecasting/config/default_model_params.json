@@ -9,10 +9,9 @@
     },
     "expsmooth":{
         "seasonal": "add", 
-        "seasonal_periods": 26, 
+        "seasonal_periods": 365, 
         "initialization_method": "estimated",
-        "trend": null,
-        "freq": "W"
+        "trend": null
     },
     "prophet":{
         "yearly_seasonality": true,
