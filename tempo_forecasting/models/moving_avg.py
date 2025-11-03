@@ -76,7 +76,7 @@ class MovingAvgModel(BaseModel):
             self.n_days = final_params["custom_params"]["n_days"]
 
             self.y_vals = train[self.target_y].iloc[-1*self.n_days:].tolist()
-            self.fitted_vals = np.clip(train.rolling(window=self.n_days,min_periods=1).mean().reset_index(drop=True),
+            self.fitted_vals = np.clip(train[self.target_y].rolling(window=self.n_days,min_periods=1).mean().reset_index(drop=True),
                                         a_min=0, 
                                         a_max=None)
             logger.debug("Model fitting completed successfully.")

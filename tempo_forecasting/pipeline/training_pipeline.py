@@ -93,10 +93,8 @@ def train_pipeline(category: str,
             model.fit(train, model_param_dict=best_params)
 
             # Make predictions for test data
-            predictions = np.maximum(np.ceil(model.predict(test) - 0.3).astype(int), 0)
-
+            predictions = model.predict(test) 
             train_preds = model.fitted_vals # these should be fit.fittedvalues
-            train_preds = np.maximum(np.ceil(train_preds - 0.3).astype(int), 0)
             
             # Compile cv metrics
             cv_all_trial_metrics = {}

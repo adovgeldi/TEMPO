@@ -11,8 +11,7 @@
         "seasonal": "add", 
         "seasonal_periods": 365, 
         "initialization_method": "estimated",
-        "trend": null,
-        "freq": "D"
+        "trend": null
     },
     "prophet":{
         "yearly_seasonality": true,

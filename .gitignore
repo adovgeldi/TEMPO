@@ -1,0 +1,84 @@
+# Python-specific
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.egg
+*.egg-info/
+dist/
+build/
+*.manifest
+*.spec
+*.wheel
+
+# Virtual environment
+.env/
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# macOS-specific
+.DS_Store
+.AppleDouble
+.LSOverride
+.Trashes
+.Spotlight-V100
+.fseventsd
+._*
+
+# Visual Studio Code-specific
+.vscode/
+*.code-workspace
+
+# Logs and debug files
+*.log
+*.debug
+*.error
+
+# Test coverage
+.coverage
+coverage.xml
+*.cover
+.hypothesis/
+.tox/
+
+# Jupyter Notebooks and  checkpoints
+.ipynb_checkpoints
+
+# Byte-compiled or optimized files
+*.pyc
+*.pyo
+
+# Cache directories
+.cache/
+__pycache__/
+*.mypy_cache/
+*.pytest_cache/
+
+# Temporary files
+*.swp
+*.tmp
+*.bak
+
+# Database
+*.sqlite3
+*.db
+
+# Secrets
+.env
+*.key
+*.pem
+/reference/*
+
+# Ignore all local data
+*.csv
+# *.json
+*.xlsx
+*.tsv
+/data/*
+**/*.csv
+**/*.xlsx
