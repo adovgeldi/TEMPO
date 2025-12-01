@@ -45,7 +45,7 @@ def test_get_test_search_params_invalid_model(model_name):
 
     
 @pytest.mark.parametrize("model_name, param_names", [
-    ("moving_avg", ["n_days"]),
+    ("moving_avg", ["n_steps"]),
     ("expsmooth", ["seasonal_periods", "smoothing_level", "smoothing_seasonal"]),
     ("prophet", ["automanual_changepoints", "changepoint_prior_scale", "seasonality_prior_scale", "seasonality_mode", "weekly_seasonality"]),
     ("xgboost", ["max_depth", "learning_rate", "n_estimators", "min_child_weight"]),
