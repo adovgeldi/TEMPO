@@ -1,7 +1,7 @@
 
 {
     "moving_avg": {
-        "n_days": 42
+        "n_steps": 42
     },
     "knn": {
         "len_q": 4,

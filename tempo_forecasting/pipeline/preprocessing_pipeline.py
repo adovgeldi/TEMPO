@@ -1,6 +1,5 @@
 import pandas as pd
 from pandas.tseries.frequencies import to_offset
-import pyspark.sql.functions as F
 
 import numpy as np
 from typing import Dict, Any, Tuple, Optional
@@ -44,38 +43,78 @@ def get_base_min_train_days(
         freq: str
         ) -> int:
     """
-    Returns the base minimum number of training days required for a given model.
+    Compute the minimun number of training steps required for a given model and frequency.
+
+    This function is designed to beL
+    - **Model-aware**: Different models have different data needs.
+    - **Frequency-aware**: Requirements scale witht the coareness of the time step.
+
+    For each model we specify:
+    - min_years[model_name]: How many years of data are minimally required.
+    - min_points[model_name]: How many total data points are minimally required, regardless of frequency..
     
     Parameters:
         model_name (str): The name of the model.
-        freq (str): The time frequency for the data (e.g., 'D' for daily, 'M' for monthly).
+        freq (str): The time frequency for the data (e.g., 'D', 'M', 'MS', 'Q', 'Q-DEC', etc.).
     
     Returns:
-        int: The minimum number of training days required for the model.
+        int: The minimum number of training steps required for the given model and frequency.
+
+    Raises:
+        ValueError: If the model_name is not recognized or freq is not a valid pandas offset alias.
     """
 
-    base_min_days = {
-        "moving_avg": 60,  # At least 2 months of training data
-        "knn": 540,        # At least 1.5 years of training data
-        "expsmooth": 365*2,# At least 2 years of training data
-        "prophet": 180,    # At least 6 months of training data
-        "xgboost": 180,    # At least 3 months of training data
-        "lightgbm": 180    # At least 3 months of training data
+    min_years: Dict[str, float] = {
+        "moving_avg": 0.25,
+        "expsmooth": 2.0,
+        "prophet": 1.5,
+        "xgboost": 2.0, 
+        "lightgbm": 2.0,
+        "knn": 2.0
+    }
+
+    min_points: Dict[str, int] = {
+        "moving_avg": 20,
+        "expsmooth": 30,
+        "prophet": 50,
+        "xgboost": 100,
+        "lightgbm": 100,
+        "knn": 100
     }
     
-    if model_name not in base_min_days:
-        raise ValueError(f"Invalid model name: '{model_name}'. Allowed models: {list(base_min_days.keys())}")
+    if model_name not in min_years or model_name not in min_points:
+        raise ValueError(
+            f"Invalid model name: '{model_name}'. "
+            f"Allowed models: {list(min_years.keys())}"
+            )
+    
+    # Validate frequency
+    try:
+        _ = to_offset(freq) 
+    except ValueError as e:
+        raise ValueError(
+            f"Invalid frequency '{freq}'. "
+            "Use a pandas-recognized frequency like 'D', 'W', 'W-SUN', 'M', etc.)."
+            ) from e
     
     step_days = _approx_days_per_step(freq)
-    days_required = base_min_days[model_name]
-    steps = max(days_required // step_days, 1)
+    years_required = min_years[model_name]
+    points_required = min_points[model_name]
 
-    return steps
+    required_by_years = np.ceil((years_required * 365) / step_days)
+    required_by_points = points_required
+
+    required_steps = max(required_by_years, required_by_points)
+
+    return max(required_steps, 1)
 
 
 def get_train_horizon_multipliers(model_name: str) -> int:
     """
     Returns the train horizon multiplier for a given model.
+
+    This multiplier defines how many multiples of the forecast horizon we want as a minimum training window, on top of the base requirement.
+    That is, if we want to forecast 6 months out, and the multiplier is 3, we want at least 18 months of training data.
     
     Parameters:
       - model_name (str): The name of the model, ["moving_avg","expsmooth","prophet","xgboost","lightgbm"]
@@ -102,16 +141,18 @@ def get_forecast_horizon(category_data: pd.DataFrame,
                          args: Dict[str, Any]
                          ) -> int:
     """
-    Computes forecast horizon based on `args['freq']`.
+    Computes forecast horizon (in steps) based on the data and the final cross-validation window.
+
+    The horizon is defined as the number of periods between the CV cutoff date and the last date that is both in the data and within the CV test window.
     
     Parameters:
       - category_data (pd.DataFrame): DataFrame containing time series data.
-       - args (Dict[str, Any]): A dictionary containing, at minimum, the following keys:
+      - args (Dict[str, Any]): A dictionary containing, at minimum, the following keys:
             - 'date_col' (str): The name of the column containing datetime information.
             - 'freq' (str): The time frequency for the data (e.g., 'D' for daily, 'M' for monthly).
             - 'cv_dates' (Sequence[Sequence[str]]): a list of lists of dates defining cross validation windows  
     Returns:
-      - int: Forecast horizon, the number of time steps to forecast into the future.
+      - int: Forecast horizon in steps; the number of time steps to forecast into the future.
     """
     date_col = args['date_col']
     freq_arg = args['freq']
@@ -144,7 +185,7 @@ def get_forecast_horizon(category_data: pd.DataFrame,
         return 0
     
     pr = pd.period_range(start=cv_cutoff_date, end=max_date, freq=freq_name)
-    horizon = max(len(pr) - 1,0)
+    horizon = max(len(pr)-1, 0)
 
     return horizon
 
@@ -154,21 +195,34 @@ def get_dynamic_min_train_days(model_name: str,
                                freq: str
                                ) -> int:
     """
-    Computes the minimum required training days based on the forecast horizon.
-    Uses a model-specific multiplier to ensure sufficient historical data.
+    Computes the dynamic minimum number of training steps required for a model, given the forecast horizon and frequency.
+    
+    Logic: 
+    - Start with the base requirement:
+            base_steps = get_base_min_train_days(model_name, freq) 
+        which enforces a minimum calendar span AND minimum point count.
+    - Then compute a horizon-scaled requirement:
+            dynamic_steps = get_train_horizon_multipliers(model_name) * forecast_horizon
+        to ensure we have multiple horizons lengths of historoical data.
+    - Take the maximum of the two:
+            required_steps = max(base_steps, dynamic_steps)
 
     Parameters:
         - model_name (str): The name of the model, ["moving_avg","expsmooth","prophet","xgboost","lightgbm"]
         - forecast_horizon (int): Number of time steps to forecast into the future.
-        - freq (str): The time frequency for the data (e.g., 'D' for daily, 'M' for monthly).
+        - freq (str): The time frequency for the data (e.g., 'D' for daily, 'M' for monthly, etc.).
 
     Returns:
         - int: the minimum required training days based on the forecast horizon
     """
-    default_min_steps = get_base_min_train_days(model_name, freq)
-    dynamic_min_steps = get_train_horizon_multipliers(model_name) * forecast_horizon
-    print(f"Model {model_name}: default_min_steps={default_min_steps}, dynamic_min_steps={dynamic_min_steps}")
-    return max(default_min_steps, dynamic_min_steps)
+    base_steps = get_base_min_train_days(model_name, freq)
+    multiplier = get_train_horizon_multipliers(model_name)
+
+    dynamic_min_steps = multiplier * max(forecast_horizon, 0)
+    required_steps = max(base_steps, dynamic_min_steps)
+
+    print(f"Model {model_name}: base_steps={base_steps}, dynamic_min_steps={dynamic_min_steps}")
+    return required_steps
 
 
 def check_train_data_sufficiency(
@@ -178,7 +232,7 @@ def check_train_data_sufficiency(
         freq: str
         ) -> bool:
     """
-    Ensures the training set has enough data relative to the forecast horizon.
+    Ensures the training set has enough data relative to the forecast horizon, given the specified frequency.
 
     Parameters:
         - train_series (pd.Series): The training data
@@ -190,18 +244,22 @@ def check_train_data_sufficiency(
         - bool: whether or not the training data contains enough data to reasonably forecast into the
                 requested forecast horizon
     """
-    required_train_days = get_dynamic_min_train_days(model_name, forecast_horizon, freq)
-
+    required_train_steps = get_dynamic_min_train_days(
+        model_name=model_name, 
+        forecast_horizon=forecast_horizon, 
+        freq=freq
+        )
+    # Work with a simple integer index
     train_series = train_series.reset_index(drop=True)
+
     nonzero_val_indices = np.array(train_series[train_series > 0].index)
     if len(nonzero_val_indices) > 0:
-        len_train_days_in_nonzero_range = max(nonzero_val_indices) - min(nonzero_val_indices) + 1
+        len_train_days_in_nonzero_range = int(max(nonzero_val_indices) - min(nonzero_val_indices) + 1)
     else:
         len_train_days_in_nonzero_range = 0
 
-    sufficient_data = (len_train_days_in_nonzero_range >= required_train_days)
-
-    suff_data_str = f"({len_train_days_in_nonzero_range} >= {required_train_days} = {sufficient_data})"
+    sufficient_data = (len_train_days_in_nonzero_range >= required_train_steps)
+    # suff_data_str = f"({len_train_days_in_nonzero_range} >= {required_train_steps} = {sufficient_data})"
 
     return sufficient_data
 
@@ -294,7 +352,8 @@ def preprocess_pipeline(category: str,
             log_func_warn(f"Category {category}: Insufficient training data for any model, defaulting to moving_avg.")
             final_model_set = {'moving_avg': MovingAvgModel}
 
-        log_func_info(f"Category {category} using models: {final_model_set.keys()}")
+        log_func_info(f"Category {category} generic candidate models: {candidate_models.keys()}.")
+        log_func_info(f"Category {category} using models: {final_model_set.keys()} after data sufficiency check.")
 
         # Enforce duration requirement for cv windows
         # We have verified that the last cv window has sufficient data, but all others must be confirmed
