@@ -3,7 +3,7 @@
         "build_params": [],
         "fit_params": [],
         "custom_params": [
-            "n_days"
+            "n_steps"
         ]
     },
     "knn": {
