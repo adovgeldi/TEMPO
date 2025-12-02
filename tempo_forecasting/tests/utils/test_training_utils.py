@@ -3,8 +3,15 @@ import pandas as pd
 import numpy as np
 from dateutil.relativedelta import relativedelta
 
-from tempo_forecasting.utils.training_utils import (calculate_metric, enforce_datetime_index, select_train_and_test, 
-                                        train_and_validate, calculate_metric, cross_validate, calculate_time_periods)
+from tempo_forecasting.utils.training_utils import (
+    calculate_metric, 
+    enforce_datetime_index, 
+    select_train_and_test, 
+    train_and_validate, 
+    calculate_metric, 
+    cross_validate, 
+    calculate_time_periods
+)
 
 # HELPERS
 # Mock of the model to be used in tests

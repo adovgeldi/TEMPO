@@ -20,9 +20,9 @@ model_args = {
 
 dummy_time_series = pd.DataFrame()
 dummy_time_series["date"] = pd.date_range(start=start_date, end=end_date, freq=model_args['freq'])
-n_days = len(dummy_time_series)
-dummy_time_series["val"] = np.append(np.sin(np.arange(int(np.floor(n_days/2)))/120)*10+20,
-                                     np.sin(np.arange(int(np.ceil(n_days/2)))/10)*10+20)
+n_steps = len(dummy_time_series)
+dummy_time_series["val"] = np.append(np.sin(np.arange(int(np.floor(n_steps/2)))/120)*10+20,
+                                     np.sin(np.arange(int(np.ceil(n_steps/2)))/10)*10+20)
 
 # Helper Function
 def get_fitted_params(model, 
@@ -112,7 +112,7 @@ def get_fitted_params(model,
         fitted_model_params["k"] = model.k
 
     elif model_name == "moving_avg":
-        fitted_model_params["n_days"] = model.n_days
+        fitted_model_params["n_steps"] = model.n_steps
 
     return fitted_model_params
 

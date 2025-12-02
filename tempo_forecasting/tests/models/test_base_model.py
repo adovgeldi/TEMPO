@@ -26,12 +26,14 @@ def test_get_name(ModelClass, expected_name):
     name = model.get_name()
     assert name == expected_name, f".get_name() should return the model's expected name ({expected_name}), not {name}"
 
+
 @pytest.mark.parametrize("ModelClass", [MovingAvgModel,ExpSmoothingModel,ProphetModel,XGBoostModel,LightGBMModel])
 def test_get_date_col(ModelClass):
     """test that date_col is being set and returned correctly for all model classes"""
     model = ModelClass(date_col="ds", target_y="y")
     date_col = model.get_date_col()
     assert date_col == "ds", f"date_col initialized to 'ds', but .get_date_col() returns {date_col}"
+
 
 @pytest.mark.parametrize("ModelClass", [MovingAvgModel,ExpSmoothingModel,ProphetModel,XGBoostModel,LightGBMModel])
 def test_set_default_params_from_json(ModelClass):
@@ -49,6 +51,7 @@ def test_set_default_params_from_json(ModelClass):
     assert initial_default_params != new_default_params, "model's default parameters should have changed from the initial default"
     assert params_to_set == new_default_params, f"model's new default parameters should match the test parameters provided at {test_param_path}"
 
+
 @pytest.mark.parametrize("ModelClass", [MovingAvgModel,ExpSmoothingModel,ProphetModel,XGBoostModel,LightGBMModel])
 def test_set_model_params_default(ModelClass):
     model = ModelClass(date_col="ds", target_y="y")
@@ -62,6 +65,7 @@ def test_set_model_params_default(ModelClass):
     assert model.default_model_params == intended_default_params, f"default model parameters should match those at {default_param_path}"
     assert model.model_params == intended_default_params, f"model parameters should match those at {default_param_path}"
 
+
 @pytest.mark.parametrize("ModelClass", [MovingAvgModel,ExpSmoothingModel,ProphetModel,XGBoostModel,LightGBMModel])
 def test_get_model_params(ModelClass):
     model = ModelClass(date_col="ds", target_y="y")
@@ -72,6 +76,7 @@ def test_get_model_params(ModelClass):
 
     assert model_params == model.default_model_params, "_set_model_params() should pull from model.default_model_params"
     assert model_params == get_mp_result, f".get_model_params() should return model.model_params({model_params}), not {get_mp_result}"
+
 
 @pytest.mark.parametrize("ModelClass", [MovingAvgModel,ExpSmoothingModel,ProphetModel,XGBoostModel,LightGBMModel])
 def test_set_model_params_nondefault(ModelClass):
@@ -85,6 +90,7 @@ def test_set_model_params_nondefault(ModelClass):
 
     model._set_model_params(params_to_set)
     assert model.model_params == {**intended_default_params, **params_to_set}, "should set .model_params to a combination of default and provided parameters"
+
 
 def _check_correct_param_categories(categorized_params, model_name):
     """Helper function to check correct parameter categorization"""
